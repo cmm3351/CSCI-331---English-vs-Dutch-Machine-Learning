@@ -1,0 +1,9 @@
+Q0. Avg Word length >= 5?
+Q1. Consecutive a's in any word?
+Q2. Is "j" present with a consonant following it?
+Q3. "De" present in sentence?
+Q4. "Het" present in sentence?
+Q5. "The" present in sentence?
+Q6  "Een" present in sentence?
+Q7. "A" present in sentence?
+Q8. "An" present in sentence?

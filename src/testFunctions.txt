@@ -1,0 +1,117 @@
+private static void printDecisionTree(Node decisionTree, int depth, String parentQ) {
+
+        String currQ = decisionTree.getQuestion();
+        int nextD = depth + 1;
+        Node trueChild = decisionTree.getChildNodes().get("True");
+        Node falseChild = decisionTree.getChildNodes().get("False");
+        String result = decisionTree.getResult();
+
+        String currQandLandP = parentQ + " -> L" + depth + "-" + currQ;
+
+        System.out.print(currQandLandP + " ======>\n\t"  );
+
+        if (trueChild != null) {
+            System.out.print(" True: " + "L" + nextD + "_" + trueChild.getQuestion());
+        }
+        if (falseChild != null) {
+            System.out.print(", False: " + "L" + nextD + "_" + falseChild.getQuestion());
+        }
+        if (result != null) {
+            System.out.print("Result: " + result);
+        }
+        System.out.println();
+
+        if (trueChild != null) {
+            printDecisionTree(trueChild, depth + 1, currQandLandP);
+        }
+        if (falseChild != null) {
+            printDecisionTree(falseChild, depth + 1, currQandLandP);
+        }
+    }
+
+private static void testExamples(ArrayList<HashMap<String, String>> examples, Node model, boolean ada) {
+
+        float correct = 0;
+        float incorrect = 0;
+
+        if (!ada) {
+            for (HashMap<String, String> ex : examples) {
+
+                Node currNode = model;
+
+                while (currNode.getResult() == null) {
+                    String currQ = currNode.getQuestion();
+                    String exAnswer = ex.get(currQ);
+
+                    if (exAnswer.equals("True")) {
+                        currNode = currNode.getChildNodes().get("True");
+                    } else {
+                        currNode = currNode.getChildNodes().get("False");
+                    }
+                }
+
+                if (currNode.getResult().equals("en")) {
+                    System.out.println("en");
+                } else {
+                    System.out.println("nl");
+                }
+
+                if (ex.get("Result").equals(currNode.getResult())) {
+                    correct++;
+                } else {
+                    incorrect++;
+                }
+
+            }
+        }
+        else {
+            for (HashMap<String, String> ex : examples) {
+
+                Node currStump = model;
+                float majority = 0.0f;
+
+                while (currStump != null) {
+
+                    String currQ = currStump.getQuestion();
+                    float hypWeight = currStump.getAdaHypWeight();
+                    String exAnswer = ex.get(currQ);
+                    Node result;
+
+                    if (exAnswer.equals("True")) {
+                        result = currStump.getChildNodes().get("True");
+                    } else {
+                        result = currStump.getChildNodes().get("False");
+                    }
+
+                    if (result.getResult().equals("en")) {
+                        majority += (1 * hypWeight);
+                    } else {
+                        majority += (-1 * hypWeight);
+                    }
+
+                    currStump = currStump.getNextStump();
+                }
+
+                String result;
+                if (majority >= 0) {
+                    result = "en";
+                    System.out.println(result);
+                }
+                else {
+                    result = "nl";
+                    System.out.println(result);
+                }
+
+                if (ex.get("Result").equals(result)) {
+                    correct++;
+                } else {
+                    incorrect++;
+                }
+            }
+        }
+
+        System.out.println("--Test Results--");
+        System.out.println("Correct: " + correct);
+        System.out.println("Incorrect: " + incorrect);
+        System.out.println("Percentage: " + (correct/(correct+incorrect)));
+    }

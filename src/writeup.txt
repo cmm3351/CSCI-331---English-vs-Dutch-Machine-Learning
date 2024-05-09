@@ -1,0 +1,173 @@
+Cristian Malone
+Jansen Orfan
+CSCI 331
+24 April 2024
+
+Lab 3 Writeup
+
+
+Features:
+
+    In order to identify differences between the English and Dutch examples,
+nine different attributes, or "questions", were created to represent five
+different classifying principles. Research was performed on the most common
+syntactical difference between English and Dutch, and was used to form these
+principles .In the implementation, the Questions are indexed from 0 to 9.
+    Question #0 asks if the average word length of the given sentence is
+greater than or equal to 5. The average word length in English is approximately
+4.7 characters, while the average word length in Dutch is approximately 5.5
+characters. Therefore, an example with an average word length less than 5 would
+be more likely to be English than Dutch, and vice versa. Most of the later
+questions are based on common appearances of certain words or substrings, so
+in case none of those appearances occur, it is good to have a feature like
+this to provide some guidance to best possibility for the example's class.
+If the average word length of the example is greater than or equal to 5,
+Question #0 is set to true for that example. Otherwise, it is set to false.
+    Question #1 asks if any of the words in the example contain an "aa"
+substring. An occurrence of two "aa" characters is very rare in English words,
+while it is very common in Dutch words. Thus, if it is present in a word in
+the sentence, the language is much more likely to be Dutch.
+    Question #2 asks if any of the words in the example contain a "j" followed
+by a consonant. Similar to Question #1, the letter j is almost always followed
+by a vowel in English words, while in Dutch, substring combinations such as "jn",
+"js", and "jv" are very common. Consequently, if a word in the example contains any
+such substring, the language is much more likely to be Dutch.
+    Questions #3, #4, and #5 ask if the words "de", "het", or "the" are present
+in the sentence, respectively. Dutch has two different words that translate to
+the English article "the" for separate use cases. Both of these words, "de" and "het",
+do not occur in the English language, and "the" does not occur in Dutch. Therefore,
+since they are common in any given sentence and exclusive from the other
+language, the presence of one or the other could strongly indicate the language.
+    Similarly, Questions #6, #7, and #8 ask if the words "een", "a", or "an" are
+present in the sentence, respectively. "Een" is the equivalent article translation
+to "a or "an" in English, and once again these words are exclusive from the
+opposite language. As a result, the presence of one or the other could strongly
+indicate the language of the current example.
+
+
+Decision Tree Learning:
+
+    In order to implement Decision Tree learning, I created a recursive function,
+decisionTreeLearning(), in order to build a Decision Tree. The function takes
+a List of HashMaps, examples, where each HashMap contains the attribute values of
+an example. The function also takes in a list of attributes, another List of HashMaps
+containing the examples from the parent node, an integer indicating the current
+tree depth, an integer indicating the maximum depth for the tree, and a String to
+indicate the question to ask if AdaBoost is being used.
+    The function first checks to see all the examples at this node are of the same
+classification, if the given list of attributes is empty, or if the maximum depth
+has been reached. This means there is no need or no means to separate examples
+further, and returns a result Node with a classification determined by the majority
+classification of the current examples. It will then check to see if the current
+examples list is empty, indicating that there is nothing at this node to separate.
+It will then also return a result Node  with a classification determined by the
+majority classification of the parent's examples.
+    If none of these checks return true, the function will calculate the importance
+of each question for the node's examples. This importance is calculated using
+boolean entropy through a variety of calculations. Whichever question yields
+the highest importance will be the question that is asked next in the tree. The
+function will create a new Node with that selected question as its question, and
+partition the examples based on their values for that question. Also, the function
+will create two copies of the attributes list, removing the selected question from
+each.
+    Finally, the function will add two values into the new Node's childNodes HashMap,
+one with a key of "True" and the other with a key of "False". This represents the
+decisions that could be made off of this node. As the values for each entry, it will
+recursively call itself to generate the next nodes for each outcome. For the "True"
+entries, it will call decisionTreeLearning() with all of the examples that returned
+true for the selected question, one of the new attribute lists, the entire examples
+list as the parent examples, an incremented depth, and so on. For the "False" entry,
+it will return the same, except it will have all the examples that returned false for
+the selected question.
+    Eventually, every level of recursion will create a result node and return upwards,
+eventually returning the root node of the completed tree to the main function. There,
+it is serialized and saved to the specified output file.
+    For predicting, my main() function simply deserializes the tree, and for each example,
+walks through the tree based on the example's attribute values. This is performed in
+the predict() function, and once the traversal reaches a result Node, it will print that
+classification to the console and move on to the next example.
+
+
+AdaBoost Learning:
+
+    In order to implement AdaBoost learning, with Decision Trees as the base learning
+algorithm, my main() function first calculates the importance of each question over
+the entire list of examples. Each question is then stored in a PriorityQueue as a Stump
+object with its corresponding importance. This PriorityQueue will order the stumps based
+on highest importance, ensuring that the stumps that split the data the most completely
+will be chosen first in the AdaBoost training. This ensures a more accurate model with
+less error. Also, during the parsing process of reading in the examples from the file
+and assigning attribute values, each example HashMap is assigned a "Weight" value equal
+to 1/N, where N is the total number of examples.
+    This PriorityQueue, along with the given examples and attributes, are passed to the
+adaBoost() function. This is where the list of weighted hypotheses is created. It
+contains a while loop that iterates until the given PriorityQueue of stumps is empty.
+First, this loop polls the top Stump question off of the queue. It then calls
+decisionTreeLearning() with a maxDepth value of 1 and a stump value equal to the current
+question. This forces the method to generate a decision stump based off of the current
+question.
+    Next, the function will iterate over all the examples, see how many the stump
+misclassifies, and sum the weights of all those examples. This "error weight" is
+then used to calculate the factor by which all the correctly classified example's
+weight must be multiplied by. This will ensure that future decision stumps pay
+more attention to the misclassified examples, ensuring that they get correctly
+classified over each iteration.
+    Once all the correct examples' weights have been refactored, all the examples'
+weights are normalized to ensure they sum to 1. This is done in the normalize()
+function, where each weight is divided by the sum of all the pre-normalized weights.
+Then, the current stump hypothesis is assigned a weight based on a calculation
+using the error weight. This indicates how much say this hypothesis will have
+during the prediction's majority calculation.
+    Finally, the function either stores the current Node hypotheses in the nextStump
+field of the Node parentHyp and then set to become the next parentHyp, or set to the
+Node firstHyp and then set to become the next parentHyp. The function will then loop
+until all stumps have been tested, and return the Node firstHyp. This is technically
+a linked Node, pointing to each successive decision stump hypothesis to test. Back
+in the main() function, the hypotheses will be serialized and saved to the specified
+output file.
+    For predicting, my main() function simply deserializes the hypotheses, and
+for each example, uses ensemble learning to perform classification. Each
+example will be classified across each stump based on its value for the attribute
+asked about by that stump. If a stump returns "English", or "en", for that
+example, it will add a value of (1 * its hypothesis weight) to the majority
+calculation. If a stump returns "Dutch", or "nl", for that example, it will add
+a value of (-1 * its hypothesis weight) to the majority calculation.
+    If the final majority calculation for an example is greater than or equal
+to 0, the function will classify that example as "en" and print the result.
+Otherwise, it will classify that example as "nl" and print the result.
+
+
+Testing Choices:
+
+    In order to train and test my learning algorithms, I downloaded test data
+that was generated and shared by students in the Discussion tab of myCourses.
+To test my generated models, I created a temporary test function that could
+test pre-classified data across a given model, determine how many examples
+were correctly or incorrectly classified, and return the correctness of the
+model as a percentage. This function, along with a decision tree printing
+function I created for debugging, are contained within the testFunctions.txt
+file attached to this submission. I removed them from the lab3.java file
+because they were purely for testing purposes and have no impact on the
+final working code.
+    For unclassified data, I performed some manual checks on smaller data
+sets, confirming on my own that all or most of the examples were classified
+correctly by my predict function. This allowed me to find flaws in my
+answerQuestions() and booleanEntropy() functions that I was able to fix.
+    In regard to the maximum depth for creating a Decision Tree during DT
+training, after extensive testing, I decided it would be best to allow
+the maximum depth to be equal to the number of attributes + 1. My program
+only separates data across nine attributes. Therefore, this maximum depth
+would allow all the attributes to be asked about in a given run of the
+tree if needed, automatically hitting the maximum depth by running out
+of questions to ask. Removing depth layers did not improve my tree
+performance by that much. Furthermore, even with a maximum depth of 10,
+my training and predicting functions still complete in ~1 second or less,
+and can generate a model with near 99% accuracy. For these reasons, when
+calling decisionTreeLearning() for Decision Tree training, I decided it
+would be best to set the maxDepth parameter to Integer.MAX_VALUE, to allow
+the algorithm to reach the max depth of 10 naturally once it runs out
+of attributes to ask about.
+    Similarly, for AdaBoost training, I also decided to utilize all nine
+decision stumps for the same reasons. My program performance was not
+hampered by using all the stumps, and my model accuracy increased with
+each stump in play.
